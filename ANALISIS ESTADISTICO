@@ -1,3 +1,15 @@
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+# Cargando el archivo de datos
+file_path = 'DATA_EDITADOS.xlsx'
+data = pd.read_excel(file_path)
+
+# Limpieza de datos
+# Eliminando valores faltantes (NaN) en las columnas de muestreo M1, M2, M3, M4
+data_clean = data.dropna(subset=['M1', 'M2', 'M3', 'M4'])
+
 # Limpieza de datos
 # Eliminando valores faltantes (NaN) en las columnas de muestreo M1, M2, M3, M4
 
