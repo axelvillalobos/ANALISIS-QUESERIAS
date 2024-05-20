@@ -1,0 +1,85 @@
+# Limpieza de datos
+# Eliminando valores faltantes (NaN) en las columnas de muestreo M1, M2, M3, M4
+
+data_clean = data.dropna(subset=['M1', 'M2', 'M3', 'M4'])
+
+# Análisis Descriptivo
+# Calculando estadísticas descriptivas para cada quesería (LOC)
+descriptive_stats = data_clean.groupby('LOC').describe()
+
+descriptive_stats
+
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+# Estableciendo el estilo de los gráficos
+sns.set(style="whitegrid")
+
+# Gráfico de barras para comparar las queserías en términos de conteos de células somáticas promedio
+
+plt.figure(figsize=(12, 6))
+plt.title("Promedio de Conteo de Células Somáticas por Quesería y Muestreo")
+sns.barplot(data=data_clean.melt(id_vars=['LOC'], value_vars=['M1', 'M2', 'M3', 'M4'], var_name='Muestreo', value_name='CSS'),
+            x='Muestreo', y='CSS', hue='LOC')
+plt.xlabel("Muestreo")
+plt.ylabel("Promedio de Conteo de Células Somáticas")
+plt.legend(title='Quesería')
+
+
+# Diagramas de caja para distribuciones de CSS
+
+plt.figure(figsize=(12, 6))
+plt.title("Distribución de Conteo de Células Somáticas por Quesería y Muestreo")
+sns.boxplot(data=data_clean.melt(id_vars=['LOC'], value_vars=['M1', 'M2', 'M3', 'M4'], var_name='Muestreo', value_name='CSS'),
+            x='Muestreo', y='CSS', hue='LOC')
+plt.xlabel("Muestreo")
+plt.ylabel("Conteo de Células Somáticas")
+plt.legend(title='Quesería')
+
+# Mostrando los gráficos
+plt.show()
+
+
+# Procediendo con el análisis descriptivo para cada fecha de muestreo y la identificación de categorías de CSS
+
+# Recargando los datos por si hay cambios
+data = pd.read_excel(file_path)
+
+# Estadística para cada fecha de muestreo M1, M2, M3, M4
+descriptive_stats_muestreo = data[['M1', 'M2', 'M3', 'M4']].describe()
+
+# Identificación de categorías de CSS
+# Definiendo las categorías
+def categorizar_css(valor):
+    if valor > 500:
+        return 'Mastitis Clínica'
+    elif valor > 200:
+        return 'Mastitis Subclínica'
+    else:
+        return 'Normal'
+
+# Aplicando la categorización a cada muestreo
+categorias = data[['M1', 'M2', 'M3', 'M4']].applymap(categorizar_css)
+
+# Contando la proporción de muestras en cada categoría por quesería
+proporciones_por_categoria = categorias.apply(pd.Series.value_counts, normalize=True).T
+
+descriptive_stats_muestreo, proporciones_por_categoria
+
+
+# Identificación de la proporción de muestras para cada LOC que caen en las categorías de Mastitis Subclínica y Clínica
+
+# Recargando los datos para asegurar consistencia
+data = pd.read_excel(file_path)
+
+# Aplicando la categorización a cada muestreo y a cada LOC
+categorias_loc = data[['LOC', 'M1', 'M2', 'M3', 'M4']].copy()
+categorias_loc[['M1', 'M2', 'M3', 'M4']] = categorias_loc[['M1', 'M2', 'M3', 'M4']].applymap(categorizar_css)
+
+# Calculando la proporción de muestras en cada categoría por quesería
+proporciones_por_loc = categorias_loc.melt(id_vars=['LOC'], value_vars=['M1', 'M2', 'M3', 'M4'], var_name='Muestreo', value_name='Categoria').groupby(['LOC', 'Categoria']).size().unstack().fillna(0)
+
+# Normalizando las proporciones para cada quesería
+proporciones_por_loc = proporciones_por_loc.div(proporciones_por_loc.sum(axis=1), axis=0)
+
+proporciones_por_loc
