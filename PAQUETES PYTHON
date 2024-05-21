@@ -1,0 +1,30 @@
+import pandas as pd
+data = pd.read_excel(file_path)
+data_cleaned = data.dropna(subset=['M1', 'M2', 'M3', 'M4'], how='all')
+
+
+from scipy.stats import f_oneway, kruskal, norm
+f_val, p_val = f_oneway(loc1[muestreo], loc2[muestreo], loc3[muestreo])
+h_stat, p_val = kruskal(loc1[muestreo], loc2[muestreo], loc3[muestreo])
+
+
+import numpy as np
+data_combined = np.concatenate([loc1_muestreo, loc2_muestreo, loc3_muestreo])
+groups = np.array(['LOC1'] * len(loc1_muestreo) + ['LOC2'] * len(loc2_muestreo) + ['LOC3'] * len(loc3_muestreo))
+
+
+import matplotlib.pyplot as plt
+plt.figure(figsize=(14, 8))
+plt.title('Distribución de los Conteos de Células Somáticas por Quesería y Muestreo')
+plt.xlabel('Muestreo')
+plt.ylabel('Conteo de Células Somáticas')
+plt.legend(title='Quesería')
+plt.show()
+
+
+import seaborn as sns
+sns.set(style="whitegrid")
+sns.boxplot(x='Muestreo', y='Conteo', hue='LOC', data=data_melted)
+
+
+from statsmodels.stats.multicomp import pairwise_tukeyhsd
