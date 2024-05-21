@@ -1,5 +1,54 @@
+import pandas as pd
+
+# Load the Excel file
+file_path = 'DATA_EDITADOS.xlsx'
+data = pd.read_excel(file_path)
+
+# Display the first few rows of the dataframe to understand its structure
+data.head()
+
+
+from scipy.stats import f_oneway
+
+# Preparar los datos
+data_cleaned = data.dropna()
+
+# Separar los datos por LOC
+loc1 = data_cleaned[data_cleaned['LOC'] == 1]
+loc2 = data_cleaned[data_cleaned['LOC'] == 2]
+loc3 = data_cleaned[data_cleaned['LOC'] == 3]
+
+# Realizar ANOVA para cada muestreo
+anova_results = {}
+for muestreo in ['M1', 'M2', 'M3', 'M4']:
+    if muestreo in data_cleaned:
+        f_val, p_val = f_oneway(loc1[muestreo], loc2[muestreo], loc3[muestreo])
+        anova_results[muestreo] = {'f_val': f_val, 'p_val': p_val}
+
+anova_results
+
+
+from scipy.stats import kruskal
+
+# Realizar la prueba de Kruskal-Wallis para cada muestreo
+kruskal_results = {}
+for muestreo in ['M1', 'M2', 'M3', 'M4']:
+    if muestreo in data_cleaned:
+        # Filtrar datos no nulos para el muestreo específico
+        loc1_muestreo = loc1[muestreo].dropna()
+        loc2_muestreo = loc2[muestreo].dropna()
+        loc3_muestreo = loc3[muestreo].dropna()
+        
+        # Realizar la prueba de Kruskal-Wallis solo si hay suficientes datos en cada grupo
+        if len(loc1_muestreo) > 1 and len(loc2_muestreo) > 1 and len(loc3_muestreo) > 1:
+            h_stat, p_val = kruskal(loc1_muestreo, loc2_muestreo, loc3_muestreo)
+            kruskal_results[muestreo] = {'h_stat': h_stat, 'p_val': p_val}
+
+kruskal_results
+
+
 import numpy as np
-from scipy import stats
+from statsmodels.stats.multicomp import pairwise_tukeyhsd
 
 # Función para realizar prueba post-hoc Dunn manualmente
 def posthoc_dunn_manual(data, groups):
@@ -44,3 +93,11 @@ for muestreo in ['M2', 'M3']:
         posthoc_results[muestreo] = posthoc_result
 
 posthoc_results
+
+
+
+
+
+
+
+
