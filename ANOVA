@@ -29,26 +29,8 @@ anova_results
 
 
 from scipy.stats import kruskal
-
-# Realizar la prueba de Kruskal-Wallis para cada muestreo
-kruskal_results = {}
-for muestreo in ['M1', 'M2', 'M3', 'M4']:
-    if muestreo in data_cleaned:
-        # Filtrar datos no nulos para el muestreo específico
-        loc1_muestreo = loc1[muestreo].dropna()
-        loc2_muestreo = loc2[muestreo].dropna()
-        loc3_muestreo = loc3[muestreo].dropna()
-        
-        # Realizar la prueba de Kruskal-Wallis solo si hay suficientes datos en cada grupo
-        if len(loc1_muestreo) > 1 and len(loc2_muestreo) > 1 and len(loc3_muestreo) > 1:
-            h_stat, p_val = kruskal(loc1_muestreo, loc2_muestreo, loc3_muestreo)
-            kruskal_results[muestreo] = {'h_stat': h_stat, 'p_val': p_val}
-
-kruskal_results
-
-
 import numpy as np
-from statsmodels.stats.multicomp import pairwise_tukeyhsd
+from scipy import stats
 
 # Función para realizar prueba post-hoc Dunn manualmente
 def posthoc_dunn_manual(data, groups):
@@ -93,6 +75,71 @@ for muestreo in ['M2', 'M3']:
         posthoc_results[muestreo] = posthoc_result
 
 posthoc_results
+
+# Realizar la prueba de Kruskal-Wallis para cada muestreo
+kruskal_results = {}
+for muestreo in ['M1', 'M2', 'M3', 'M4']:
+    if muestreo in data_cleaned:
+        # Filtrar datos no nulos para el muestreo específico
+        loc1_muestreo = loc1[muestreo].dropna()
+        loc2_muestreo = loc2[muestreo].dropna()
+        loc3_muestreo = loc3[muestreo].dropna()
+        
+        # Realizar la prueba de Kruskal-Wallis solo si hay suficientes datos en cada grupo
+        if len(loc1_muestreo) > 1 and len(loc2_muestreo) > 1 and len(loc3_muestreo) > 1:
+            h_stat, p_val = kruskal(loc1_muestreo, loc2_muestreo, loc3_muestreo)
+            kruskal_results[muestreo] = {'h_stat': h_stat, 'p_val': p_val}
+
+kruskal_results
+
+import numpy as np
+from scipy import stats
+
+# Función para realizar prueba post-hoc Dunn manualmente
+def posthoc_dunn_manual(data, groups):
+    unique_groups = np.unique(groups)
+    comparisons = [(i, j) for i in unique_groups for j in unique_groups if i < j]
+    p_values = []
+
+    for (group1, group2) in comparisons:
+        data1 = data[groups == group1]
+        data2 = data[groups == group2]
+        rank_sum1 = np.sum(np.argsort(np.argsort(np.concatenate((data1, data2))))[:len(data1)])
+        rank_sum2 = np.sum(np.argsort(np.argsort(np.concatenate((data1, data2))))[len(data1):])
+        n1, n2 = len(data1), len(data2)
+        U = rank_sum1 - (n1 * (n1 + 1)) / 2
+        U_ = rank_sum2 - (n2 * (n2 + 1)) / 2
+        U = min(U, U_)
+        mean_rank = n1 * n2 / 2
+        sigma = np.sqrt(n1 * n2 * (n1 + n2 + 1) / 12)
+        z = (U - mean_rank) / sigma
+        p = 2 * (1 - stats.norm.cdf(np.abs(z)))
+        p_values.append(p)
+    
+    p_adjusted = np.array(p_values) * len(p_values)  # Bonferroni correction
+    p_adjusted = np.minimum(p_adjusted, 1)  # Adjust to be max 1.0
+    return dict(zip(comparisons, p_adjusted))
+
+# Preparar y realizar las pruebas post-hoc Dunn para los muestreos M2 y M3
+posthoc_results = {}
+for muestreo in ['M2', 'M3']:
+    if muestreo in data_cleaned:
+        # Filtrar datos no nulos para el muestreo específico
+        loc1_muestreo = loc1[muestreo].dropna()
+        loc2_muestreo = loc2[muestreo].dropna()
+        loc3_muestreo = loc3[muestreo].dropna()
+        
+        # Crear una lista combinada con etiquetas para la prueba de Dunn
+        data_combined = np.concatenate([loc1_muestreo, loc2_muestreo, loc3_muestreo])
+        groups = np.array(['LOC1'] * len(loc1_muestreo) + ['LOC2'] * len(loc2_muestreo) + ['LOC3'] * len(loc3_muestreo))
+        
+        # Realizar la prueba post-hoc Dunn manualmente
+        posthoc_result = posthoc_dunn_manual(data_combined, groups)
+        posthoc_results[muestreo] = posthoc_result
+
+posthoc_results
+
+
 
 
 
